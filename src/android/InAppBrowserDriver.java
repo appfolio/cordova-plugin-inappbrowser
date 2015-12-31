@@ -271,8 +271,7 @@ public abstract class InAppBrowserDriver {
 
             InAppBrowserInternal internalPlugin = getInAppBrowserInternalPlugin();
             if (internalPlugin != null) {
-                internalPlugin.setDriver(this);
-                internalPlugin.init();
+                internalPlugin.init(this);
             }
         }
 

@@ -16,10 +16,8 @@ public class InAppBrowserInternal extends CordovaPlugin {
 
     protected InAppBrowserDriver driver;
 
-    public void init() {
-        if (driver == null) {
-            return;
-        }
+    public void init(final InAppBrowserDriver driver) {
+        this.driver = driver;
 
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -141,9 +139,5 @@ public class InAppBrowserInternal extends CordovaPlugin {
         }
 
         return null;
-    }
-
-    public void setDriver(InAppBrowserDriver driver) {
-        this.driver = driver;
     }
 }
