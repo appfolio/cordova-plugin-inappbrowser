@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
 import android.util.TypedValue;
@@ -16,10 +15,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -53,9 +49,23 @@ public abstract class InAppBrowserDriver {
         this.inAppBrowser = inAppBrowser;
         this.preferences = new CordovaPreferences();
         this.url = url;
+
+        initWebView();
+        createViews();
     }
 
+    /**
+     * Create a new instance of an {@link InAppBrowserJavascriptInterface}.
+     *
+     * @return The new instance
+     */
     abstract public InAppBrowserJavascriptInterface getJavascriptInterface();
+
+    /**
+     * Set the settings that the user configured for the InAppBrowser on the underlying WebView.
+     * Not all settings may be able to be honored depending on the WebView engine being used.
+     */
+    abstract public void setSettingsOnWebView();
 
     /**
      * Notify the host application that a page has started loading.
@@ -231,6 +241,12 @@ public abstract class InAppBrowserDriver {
         });
     }
 
+    /**
+     * Create the CordovaWebViewImpl and load the initial URL.
+     * This should be called before {@link #createViews()}.
+     * The Cordova WebView being created is a minimal one and adds only a single plugin, the internal plugin,
+     * which can be configured by the {@code inAppBrowserInternalPlugin} key in {@code config.xml}.
+     */
     public void initWebView() {
         final CordovaInterface cordova = inAppBrowser.getCordova();
 
@@ -238,30 +254,7 @@ public abstract class InAppBrowserDriver {
         inAppWebView = new CordovaWebViewImpl(CordovaWebViewImpl.createEngine(cordova.getActivity(), preferences));
         inAppWebView.getView().setLayoutParams(new LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT));
 
-        // Crosswalk does not have getSettings and XWalkPreferences does not have any of the needed settings
-        if (inAppWebView.getView() instanceof WebView) {
-            WebSettings settings = null;
-            try {
-                settings = (WebSettings)InAppBrowserImpl.invokeOn(inAppWebView.getView(), "getSettings", new Class[0], new Object[0]);
-            } catch (InAppBrowserImpl.InvokeException e) {
-                e.printStackTrace();
-            }
-
-            if (settings != null) {
-                settings.setBuiltInZoomControls(inAppBrowser.getShowZoomControls());
-
-                // Toggle whether this is enabled or not!
-                Bundle appSettings = cordova.getActivity().getIntent().getExtras();
-                boolean enableDatabase = appSettings == null || appSettings.getBoolean("InAppBrowserStorageEnabled", true);
-                settings.setDatabaseEnabled(enableDatabase);
-            }
-
-            if (inAppBrowser.getClearAllCache()) {
-                CookieManager.getInstance().removeAllCookie();
-            } else if (inAppBrowser.getClearSessionCache()) {
-                CookieManager.getInstance().removeSessionCookie();
-            }
-        }
+        setSettingsOnWebView();
 
         if (!inAppWebView.isInitialized()) {
             ArrayList<PluginEntry> pluginEntries = new ArrayList<PluginEntry>();
@@ -279,6 +272,9 @@ public abstract class InAppBrowserDriver {
         inAppWebView.handleResume(true);
     }
 
+    /**
+     * Create the InAppBrowser views.
+     */
     public void createViews() {
         final CordovaInterface cordova = inAppBrowser.getCordova();
 
@@ -319,12 +315,9 @@ public abstract class InAppBrowserDriver {
         Resources activityRes = cordova.getActivity().getResources();
         int backResId = activityRes.getIdentifier("ic_action_previous_item", "drawable", cordova.getActivity().getPackageName());
         Drawable backIcon = activityRes.getDrawable(backResId);
-        if(android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN)
-        {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
             back.setBackgroundDrawable(backIcon);
-        }
-        else
-        {
+        } else {
             back.setBackground(backIcon);
         }
         back.setOnClickListener(new View.OnClickListener() {
@@ -342,12 +335,9 @@ public abstract class InAppBrowserDriver {
         forward.setId(3);
         int fwdResId = activityRes.getIdentifier("ic_action_next_item", "drawable", cordova.getActivity().getPackageName());
         Drawable fwdIcon = activityRes.getDrawable(fwdResId);
-        if(android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN)
-        {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
             forward.setBackgroundDrawable(fwdIcon);
-        }
-        else
-        {
+        } else {
             forward.setBackground(fwdIcon);
         }
         forward.setOnClickListener(new View.OnClickListener() {
@@ -388,12 +378,9 @@ public abstract class InAppBrowserDriver {
         close.setId(5);
         int closeResId = activityRes.getIdentifier("ic_action_remove", "drawable", cordova.getActivity().getPackageName());
         Drawable closeIcon = activityRes.getDrawable(closeResId);
-        if(android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN)
-        {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
             close.setBackgroundDrawable(closeIcon);
-        }
-        else
-        {
+        } else {
             close.setBackground(closeIcon);
         }
         close.setOnClickListener(new View.OnClickListener() {
@@ -441,7 +428,7 @@ public abstract class InAppBrowserDriver {
     }
 
     /**
-     * Shows the dialog
+     * Show the dialog.
      */
     public void showDialog() {
         inAppBrowser.getCordova().getActivity().runOnUiThread(new Runnable() {
@@ -455,7 +442,7 @@ public abstract class InAppBrowserDriver {
     }
 
     /**
-     * Closes the dialog
+     * Close the dialog.
      */
     public void closeDialog() {
         final CordovaWebView childView = inAppWebView;
@@ -484,13 +471,6 @@ public abstract class InAppBrowserDriver {
         } catch (JSONException ex) {
             Log.d(LOG_TAG, "Should never happen");
         }
-    }
-
-    protected InAppBrowserInternal getInAppBrowserInternalPlugin() {
-        if (inAppWebView != null) {
-            return (InAppBrowserInternal)inAppWebView.getPluginManager().getPlugin("InAppBrowserInternal");
-        }
-        return null;
     }
 
     /**
@@ -523,12 +503,19 @@ public abstract class InAppBrowserDriver {
         }
     }
 
+    protected InAppBrowserInternal getInAppBrowserInternalPlugin() {
+        if (inAppWebView != null) {
+            return (InAppBrowserInternal)inAppWebView.getPluginManager().getPlugin("InAppBrowserInternal");
+        }
+        return null;
+    }
+
     /**
      * Navigate to the new page
      *
      * @param url to load
      */
-    private void navigate(String url) {
+    protected void navigate(String url) {
         InputMethodManager imm = (InputMethodManager)inAppBrowser.getCordova().getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(edittext.getWindowToken(), 0);
 
@@ -546,11 +533,9 @@ public abstract class InAppBrowserDriver {
      * @return int
      */
     protected int dpToPixels(int dipValue) {
-        int value = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
                 (float) dipValue,
                 inAppBrowser.getCordova().getActivity().getResources().getDisplayMetrics()
         );
-
-        return value;
     }
 }

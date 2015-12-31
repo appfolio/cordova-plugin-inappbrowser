@@ -390,9 +390,6 @@ public class InAppBrowserImpl extends CordovaPlugin implements InAppBrowser {
                 } catch (Exception e) {
                     throw new RuntimeException("Failed to create InAppBrowserDriver. ", e);
                 }
-
-                driver.initWebView();
-                driver.createViews();
             }
         });
         return "";
