@@ -33,7 +33,7 @@ public class InAppBrowserDialog extends Dialog {
         this.context = context;
     }
 
-    public void setInAppBrowser(InAppBrowser browser) {
+    public void setInAppBrowserImpl(InAppBrowser browser) {
         this.inAppBrowser = browser;
     }
 
@@ -43,10 +43,10 @@ public class InAppBrowserDialog extends Dialog {
         } else {
             // better to go through the in inAppBrowser
             // because it does a clean up
-            if (this.inAppBrowser.hardwareBack() && this.inAppBrowser.canGoBack()) {
-                this.inAppBrowser.goBack();
+            if (this.inAppBrowser.getHardwareBackButton() && this.inAppBrowser.getDriver().canGoBack()) {
+                this.inAppBrowser.getDriver().goBack();
             }  else {
-                this.inAppBrowser.closeDialog();
+                this.inAppBrowser.getDriver().closeDialog();
             }
         }
     }

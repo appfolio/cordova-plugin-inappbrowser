@@ -10,88 +10,23 @@ import org.apache.cordova.ICordovaHttpAuthHandler;
 import org.apache.cordova.LOG;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.xwalk.core.JavascriptInterface;
 
 public class InAppBrowserInternal extends CordovaPlugin {
     private static final String LOG_TAG = "InAppBrowserInternal";
-    protected InAppBrowserEventHandler eventHandler;
 
-    public interface InAppBrowserEventHandler {
-        /**
-         * Notify the host application that a page has started loading.
-         *
-         * @param newUrl    The url of the page.
-         *
-         * @return          Object to stop propagation or null
-         */
-        Object onPageStarted(String newUrl);
+    protected InAppBrowserDriver driver;
 
-        /**
-         * Notify the host application that a page has finished loading.
-         *
-         * @param url  The url of the page.
-         *
-         * @return      Object to stop propagation or null
-         */
-        Object onPageFinished(String url);
-
-        /**
-         * Notify the host application that there was an error loading the page.
-         *
-         * @param errorCode     The error code received.
-         * @param description   Description of the error.
-         * @param url           The url the error was received for.
-         *
-         * @return              Object to stop propagation or null
-         */
-        Object onReceivedError(int errorCode, String description, String url);
-
-        /**
-         * Notify the host application that there was a HTTP auth challenge issued.
-         *
-         * @param view      The WebView that is initiating the callback
-         * @param handler   The HttpAuthHandler used to set the WebView's response
-         * @param host      The host requiring authentication
-         * @param realm     The realm for which authentication is required
-         *
-         * @return          Returns true if host application will resolve this auth challenge, otherwise false
-         */
-        Boolean onReceivedHttpAuthRequest(CordovaWebView view, ICordovaHttpAuthHandler handler, String host, String realm);
-
-        /**
-         * Notify the host application that the InAppBrowser is exiting.
-         *
-         * @return              Object to stop propagation or null
-         */
-        Object onExit();
-
-        /**
-         * Notify the host application that the internal onFinish callback was called
-         *
-         * @param message       The string the callback was called with
-         * @param callbackId    The callback ID to send the result to
-         */
-        void onCallbackFinish(String message, String callbackId);
-    }
-
-    protected class InAppBrowserJsInterface {
-        @JavascriptInterface
-        public void onFinish(String message, String callbackId) {
-            if (callbackId.startsWith("InAppBrowser") && eventHandler != null) {
-                eventHandler.onCallbackFinish(message, callbackId);
-            }
+    public void init() {
+        if (driver == null) {
+            return;
         }
-    }
 
-    @Override
-    protected void pluginInitialize() {
-        super.pluginInitialize();
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    InAppBrowser.invokeOn(webView.getView(), "addJavascriptInterface", new Class[]{ Object.class, String.class }, new Object[] { new InAppBrowserJsInterface(), "__inappbrowser" });
-                } catch (InAppBrowser.InvokeException e) {
+                    InAppBrowserImpl.invokeOn(driver.inAppWebView.getView(), "addJavascriptInterface", new Class[]{Object.class, String.class}, new Object[]{driver.getJavascriptInterface(), "__inappbrowser"});
+                } catch (InAppBrowserImpl.InvokeException e) {
                     throw new RuntimeException("Could not add Javascript interface:", e.getCause());
                 }
             }
@@ -110,8 +45,8 @@ public class InAppBrowserInternal extends CordovaPlugin {
     @Override
     public Boolean shouldAllowNavigation(String url) {
         if (url.startsWith("http://") || url.startsWith("https://")) {
-            if (eventHandler != null) {
-                eventHandler.onPageStarted(url);
+            if (driver != null) {
+                driver.onPageStarted(url);
             }
 
             return true;
@@ -178,8 +113,8 @@ public class InAppBrowserInternal extends CordovaPlugin {
 
     @Override
     public boolean onReceivedHttpAuthRequest(CordovaWebView view, ICordovaHttpAuthHandler handler, String host, String realm) {
-        if (eventHandler != null) {
-            return eventHandler.onReceivedHttpAuthRequest(view, handler, host, realm);
+        if (driver != null) {
+            return driver.onReceivedHttpAuthRequest(view, handler, host, realm);
         } else {
             return false;
         }
@@ -188,27 +123,27 @@ public class InAppBrowserInternal extends CordovaPlugin {
     @Override
     @SuppressWarnings("unchecked")
     public Object onMessage(String id, Object data) {
-        if (eventHandler == null) {
+        if (driver == null) {
             return null;
         }
 
         if (id.equals("onPageFinished") && data instanceof String) {
-            return eventHandler.onPageFinished((String)data);
+            return driver.onPageFinished((String) data);
         } else if (id.equals("onReceivedError") && data instanceof JSONObject) {
             try {
                 JSONObject jsonObject = (JSONObject)data;
-                return eventHandler.onReceivedError(jsonObject.getInt("errorCode"), jsonObject.getString("description"), jsonObject.getString("url"));
+                return driver.onReceivedError(jsonObject.getInt("errorCode"), jsonObject.getString("description"), jsonObject.getString("url"));
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         } else if (id.equals("exit")) {
-            return eventHandler.onExit();
+            return driver.onExit();
         }
 
         return null;
     }
 
-    public void setEventHandler(InAppBrowserEventHandler eventHandler) {
-        this.eventHandler = eventHandler;
+    public void setDriver(InAppBrowserDriver driver) {
+        this.driver = driver;
     }
 }
