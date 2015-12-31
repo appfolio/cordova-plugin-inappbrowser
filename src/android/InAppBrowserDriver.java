@@ -1,7 +1,7 @@
 package org.apache.cordova.inappbrowser;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
+import android.app.Activity;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -9,12 +9,10 @@ import android.text.InputType;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
 import android.webkit.ValueCallback;
 import android.widget.Button;
 import android.widget.EditText;
@@ -276,22 +274,28 @@ public abstract class InAppBrowserDriver {
      * Create the InAppBrowser views.
      */
     public void createViews() {
-        final CordovaInterface cordova = inAppBrowser.getCordova();
+        final Activity cordovaActivity = inAppBrowser.getCordova().getActivity();
+        final Resources resources = cordovaActivity.getResources();
+        final String packageName = cordovaActivity.getPackageName();
+
+        final int actionButtonContainerId = resources.getIdentifier("iabActionButtonContainer", "id", packageName);
+        final int backId = resources.getIdentifier("iabBackButton", "id", packageName);
+        final int closeId = resources.getIdentifier("iabCloseButton", "id", packageName);
 
         // Let's create the main dialog
-        dialog = new InAppBrowserDialog(cordova.getActivity(), android.R.style.Theme_NoTitleBar);
+        dialog = new InAppBrowserDialog(cordovaActivity, android.R.style.Theme_NoTitleBar);
         dialog.getWindow().getAttributes().windowAnimations = android.R.style.Animation_Dialog;
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setCancelable(true);
         dialog.setInAppBrowserImpl(inAppBrowser);
 
         // Main container layout
-        LinearLayout main = new LinearLayout(cordova.getActivity());
+        LinearLayout main = new LinearLayout(cordovaActivity);
         main.setOrientation(LinearLayout.VERTICAL);
 
         // Toolbar layout
-        RelativeLayout toolbar = new RelativeLayout(cordova.getActivity());
-        //Please, no more black!
+        RelativeLayout toolbar = new RelativeLayout(cordovaActivity);
+        // Please, no more black!
         toolbar.setBackgroundColor(android.graphics.Color.LTGRAY);
         toolbar.setLayoutParams(new RelativeLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, dpToPixels(44)));
         toolbar.setPadding(dpToPixels(2), dpToPixels(2), dpToPixels(2), dpToPixels(2));
@@ -299,22 +303,21 @@ public abstract class InAppBrowserDriver {
         toolbar.setVerticalGravity(Gravity.TOP);
 
         // Action Button Container layout
-        RelativeLayout actionButtonContainer = new RelativeLayout(cordova.getActivity());
+        RelativeLayout actionButtonContainer = new RelativeLayout(cordovaActivity);
         actionButtonContainer.setLayoutParams(new RelativeLayout.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT));
         actionButtonContainer.setHorizontalGravity(Gravity.LEFT);
         actionButtonContainer.setVerticalGravity(Gravity.CENTER_VERTICAL);
-        actionButtonContainer.setId(1);
+        actionButtonContainer.setId(actionButtonContainerId);
 
         // Back button
-        Button back = new Button(cordova.getActivity());
+        Button back = new Button(cordovaActivity);
         RelativeLayout.LayoutParams backLayoutParams = new RelativeLayout.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.MATCH_PARENT);
         backLayoutParams.addRule(RelativeLayout.ALIGN_LEFT);
         back.setLayoutParams(backLayoutParams);
         back.setContentDescription("Back Button");
-        back.setId(2);
-        Resources activityRes = cordova.getActivity().getResources();
-        int backResId = activityRes.getIdentifier("ic_action_previous_item", "drawable", cordova.getActivity().getPackageName());
-        Drawable backIcon = activityRes.getDrawable(backResId);
+        back.setId(backId);
+        final int backResId = resources.getIdentifier("ic_action_previous_item", "drawable", cordovaActivity.getPackageName());
+        Drawable backIcon = resources.getDrawable(backResId);
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
             back.setBackgroundDrawable(backIcon);
         } else {
@@ -327,18 +330,18 @@ public abstract class InAppBrowserDriver {
         });
 
         // Forward button
-        Button forward = new Button(cordova.getActivity());
+        Button forward = new Button(cordovaActivity);
         RelativeLayout.LayoutParams forwardLayoutParams = new RelativeLayout.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.MATCH_PARENT);
-        forwardLayoutParams.addRule(RelativeLayout.RIGHT_OF, 2);
+        forwardLayoutParams.addRule(RelativeLayout.RIGHT_OF, backId);
         forward.setLayoutParams(forwardLayoutParams);
         forward.setContentDescription("Forward Button");
-        forward.setId(3);
-        int fwdResId = activityRes.getIdentifier("ic_action_next_item", "drawable", cordova.getActivity().getPackageName());
-        Drawable fwdIcon = activityRes.getDrawable(fwdResId);
+        forward.setId(resources.getIdentifier("iabForwardButton", "id", packageName));
+        final int forwardResId = resources.getIdentifier("ic_action_next_item", "drawable", cordovaActivity.getPackageName());
+        Drawable forwardIcon = resources.getDrawable(forwardResId);
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
-            forward.setBackgroundDrawable(fwdIcon);
+            forward.setBackgroundDrawable(forwardIcon);
         } else {
-            forward.setBackground(fwdIcon);
+            forward.setBackground(forwardIcon);
         }
         forward.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -347,37 +350,28 @@ public abstract class InAppBrowserDriver {
         });
 
         // Edit Text Box
-        edittext = new EditText(cordova.getActivity());
+        edittext = new EditText(cordovaActivity);
         RelativeLayout.LayoutParams textLayoutParams = new RelativeLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
-        textLayoutParams.addRule(RelativeLayout.RIGHT_OF, 1);
-        textLayoutParams.addRule(RelativeLayout.LEFT_OF, 5);
+        textLayoutParams.addRule(RelativeLayout.RIGHT_OF, actionButtonContainerId);
+        textLayoutParams.addRule(RelativeLayout.LEFT_OF, closeId);
         edittext.setLayoutParams(textLayoutParams);
-        edittext.setId(4);
+        edittext.setId(resources.getIdentifier("iabEditText", "id", packageName));
         edittext.setSingleLine(true);
         edittext.setText(url);
+        edittext.setIncludeFontPadding(false);
         edittext.setInputType(InputType.TYPE_TEXT_VARIATION_URI);
         edittext.setImeOptions(EditorInfo.IME_ACTION_GO);
-        edittext.setInputType(InputType.TYPE_NULL); // Will not except input... Makes the text NON-EDITABLE
-        edittext.setOnKeyListener(new View.OnKeyListener() {
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                // If the event is a key-down event on the "enter" button
-                if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                    navigate(edittext.getText().toString());
-                    return true;
-                }
-                return false;
-            }
-        });
+        edittext.setInputType(InputType.TYPE_NULL); // Will not accept input... Makes the text NON-EDITABLE
 
         // Close/Done button
-        Button close = new Button(cordova.getActivity());
+        Button close = new Button(cordovaActivity);
         RelativeLayout.LayoutParams closeLayoutParams = new RelativeLayout.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.MATCH_PARENT);
         closeLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
         close.setLayoutParams(closeLayoutParams);
-        forward.setContentDescription("Close Button");
-        close.setId(5);
-        int closeResId = activityRes.getIdentifier("ic_action_remove", "drawable", cordova.getActivity().getPackageName());
-        Drawable closeIcon = activityRes.getDrawable(closeResId);
+        close.setContentDescription("Close Button");
+        close.setId(closeId);
+        int closeResId = resources.getIdentifier("ic_action_remove", "drawable", cordovaActivity.getPackageName());
+        Drawable closeIcon = resources.getDrawable(closeResId);
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
             close.setBackgroundDrawable(closeIcon);
         } else {
@@ -389,7 +383,7 @@ public abstract class InAppBrowserDriver {
             }
         });
 
-        inAppWebView.getView().setId(6);
+        inAppWebView.getView().setId(resources.getIdentifier("iabWebView", "id", packageName));
         inAppWebView.getView().requestFocus();
         inAppWebView.getView().requestFocusFromTouch();
 
@@ -508,23 +502,6 @@ public abstract class InAppBrowserDriver {
             return (InAppBrowserInternal)inAppWebView.getPluginManager().getPlugin("InAppBrowserInternal");
         }
         return null;
-    }
-
-    /**
-     * Navigate to the new page
-     *
-     * @param url to load
-     */
-    protected void navigate(String url) {
-        InputMethodManager imm = (InputMethodManager)inAppBrowser.getCordova().getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(edittext.getWindowToken(), 0);
-
-        if (!url.startsWith("http") && !url.startsWith("file:")) {
-            this.inAppWebView.loadUrl("http://" + url);
-        } else {
-            this.inAppWebView.loadUrl(url);
-        }
-        this.inAppWebView.getView().requestFocus();
     }
 
     /**
