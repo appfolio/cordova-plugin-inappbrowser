@@ -209,7 +209,7 @@ public abstract class InAppBrowserDriver {
     public void injectDeferredObject(String source, String jsWrapper) {
         String scriptToInject;
         if (jsWrapper != null) {
-            org.json.JSONArray jsonEsc = new org.json.JSONArray();
+            JSONArray jsonEsc = new JSONArray();
             jsonEsc.put(source);
             String jsonRepr = jsonEsc.toString();
             String jsonSourceString = jsonRepr.substring(1, jsonRepr.length() - 1);
