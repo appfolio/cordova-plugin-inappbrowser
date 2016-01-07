@@ -37,7 +37,7 @@ public class InAppBrowserDefaultDriver extends InAppBrowserDriver {
             settings.setBuiltInZoomControls(inAppBrowser.getShowZoomControls());
 
             // Toggle whether this is enabled or not!
-            Bundle appSettings = inAppBrowser.getCordova().getActivity().getIntent().getExtras();
+            Bundle appSettings = inAppBrowser.getCordovaInterface().getActivity().getIntent().getExtras();
             boolean enableDatabase = appSettings == null || appSettings.getBoolean("InAppBrowserStorageEnabled", true);
             settings.setDatabaseEnabled(enableDatabase);
         }

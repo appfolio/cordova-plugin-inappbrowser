@@ -221,7 +221,7 @@ public class InAppBrowserImpl extends CordovaPlugin implements InAppBrowser {
         return this;
     }
 
-    public CordovaInterface getCordova() {
+    public CordovaInterface getCordovaInterface() {
         return cordova;
     }
 

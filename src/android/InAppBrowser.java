@@ -22,7 +22,7 @@ public interface InAppBrowser {
     String HARDWARE_BACK_BUTTON = "hardwareback";
 
     InAppBrowser getInAppBrowser();
-    CordovaInterface getCordova();
+    CordovaInterface getCordovaInterface();
     CordovaPreferences getPreferences();
     CordovaWebView getWebView();
     InAppBrowserDriver getDriver();

@@ -218,7 +218,7 @@ public abstract class InAppBrowserDriver {
             scriptToInject = source;
         }
         final String finalScriptToInject = scriptToInject;
-        inAppBrowser.getCordova().getActivity().runOnUiThread(new Runnable() {
+        inAppBrowser.getCordovaInterface().getActivity().runOnUiThread(new Runnable() {
             @SuppressLint("NewApi")
             @Override
             public void run() {
@@ -243,7 +243,7 @@ public abstract class InAppBrowserDriver {
      * which can be configured by the {@code inAppBrowserInternalPlugin} key in {@code config.xml}.
      */
     public void initWebView() {
-        final CordovaInterface cordova = inAppBrowser.getCordova();
+        final CordovaInterface cordova = inAppBrowser.getCordovaInterface();
 
         // Create CordovaWebViewImpl
         inAppWebView = new CordovaWebViewImpl(CordovaWebViewImpl.createEngine(cordova.getActivity(), preferences));
@@ -271,7 +271,7 @@ public abstract class InAppBrowserDriver {
      * Create the InAppBrowser views.
      */
     public void createViews() {
-        final Activity cordovaActivity = inAppBrowser.getCordova().getActivity();
+        final Activity cordovaActivity = inAppBrowser.getCordovaInterface().getActivity();
         final Resources resources = cordovaActivity.getResources();
         final String packageName = cordovaActivity.getPackageName();
 
@@ -422,7 +422,7 @@ public abstract class InAppBrowserDriver {
      * Show the dialog.
      */
     public void showDialog() {
-        inAppBrowser.getCordova().getActivity().runOnUiThread(new Runnable() {
+        inAppBrowser.getCordovaInterface().getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (dialog != null) {
@@ -442,7 +442,7 @@ public abstract class InAppBrowserDriver {
         if (childView == null) {
             return;
         }
-        inAppBrowser.getCordova().getActivity().runOnUiThread(new Runnable() {
+        inAppBrowser.getCordovaInterface().getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 // NB: From SDK 19: "If you call methods on WebView from any thread
@@ -509,7 +509,7 @@ public abstract class InAppBrowserDriver {
     protected int dpToPixels(int dipValue) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
                 (float) dipValue,
-                inAppBrowser.getCordova().getActivity().getResources().getDisplayMetrics()
+                inAppBrowser.getCordovaInterface().getActivity().getResources().getDisplayMetrics()
         );
     }
 }
