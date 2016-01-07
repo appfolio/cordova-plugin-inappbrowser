@@ -151,15 +151,12 @@ public abstract class InAppBrowserDriver {
         // Check if there is some plugin which can resolve this auth challenge
         PluginManager pluginManager = null;
         try {
-            pluginManager = (PluginManager)InAppBrowserImpl.invokeOn(inAppBrowser.getWebView().getView(), "getPluginManager", new Class[0], new Object[0]);
+            pluginManager = (PluginManager) InAppBrowserImpl.invokeOn(inAppBrowser.getWebView().getView(), "getPluginManager", new Class[0], new Object[0]);
         } catch (InAppBrowserImpl.InvokeException e) {
+            Log.d(LOG_TAG, "Could not get plugin manager");
         }
 
-        if (pluginManager != null) {
-            return pluginManager.onReceivedHttpAuthRequest(view, handler, host, realm);
-        } else {
-            return false;
-        }
+        return pluginManager != null && pluginManager.onReceivedHttpAuthRequest(view, handler, host, realm);
     }
 
     /**
