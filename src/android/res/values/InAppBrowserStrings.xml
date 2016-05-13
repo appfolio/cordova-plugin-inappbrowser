@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources name="InAppBrowser">
+    <item name="iabActionButtonContainer" type="id" />
+    <item name="iabBackButton" type="id" />
+    <item name="iabCloseButton" type="id" />
+    <item name="iabEditText" type="id" />
+    <item name="iabForwardButton" type="id" />
+    <item name="iabWebView" type="id" />
+</resources>

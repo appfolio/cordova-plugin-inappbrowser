@@ -18,13 +18,8 @@
 */
 package org.apache.cordova.inappbrowser;
 
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
-import android.util.Log;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * Created by Oliver on 22/11/2013.
@@ -38,7 +33,7 @@ public class InAppBrowserDialog extends Dialog {
         this.context = context;
     }
 
-    public void setInAppBroswer(InAppBrowser browser) {
+    public void setInAppBrowserImpl(InAppBrowser browser) {
         this.inAppBrowser = browser;
     }
 
@@ -48,10 +43,10 @@ public class InAppBrowserDialog extends Dialog {
         } else {
             // better to go through the in inAppBrowser
             // because it does a clean up
-            if (this.inAppBrowser.hardwareBack() && this.inAppBrowser.canGoBack()) {
-                this.inAppBrowser.goBack();
+            if (this.inAppBrowser.getHardwareBackButton() && this.inAppBrowser.getDriver().canGoBack()) {
+                this.inAppBrowser.getDriver().goBack();
             }  else {
-                this.inAppBrowser.closeDialog();
+                this.inAppBrowser.getDriver().closeDialog();
             }
         }
     }
